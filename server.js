@@ -1,4 +1,3 @@
-const path = require("path");
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -6,6 +5,7 @@ const passport = require("passport");
 
 const users = require("./routes/api/users");
 const games = require("./routes/api/games");
+const highScores = require("./routes/api/high-scores");
 
 const app = express();
 
@@ -17,19 +17,22 @@ app.use(
 );
 app.use(bodyParser.json());
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static("client/build"));
- }
+// ALLOW CORS
+const allowCrossDomain = function(req, res, next) {
+  console.log("I AM CORS")
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  next();
+};
+app.use(allowCrossDomain);
 
 // DB Config
 const db = require("./config/keys").mongoURI;
 
 // Connect to MongoDB
 mongoose
-  .connect(
-    db,
-    { useNewUrlParser: true }
-  )
+  .connect(db, { useNewUrlParser: true })
   .then(() => console.log("MongoDB successfully connected"))
   .catch(err => console.log(err));
 
@@ -40,12 +43,13 @@ app.use(passport.initialize());
 require("./config/passport")(passport);
 
 // Routes
-app.use("/api/users", users);
-app.use("/api/v1/games", games);
+app.post("/ping", (req, res) => res.sendStatus(200));
 
-app.use("*", (req, res) =>
- res.sendFile(path.join(__dirname, "../client/build/index.html"))
-);
+app.use("/api/v1/users", users);
+app.use("/api/v1/games", games);
+app.use("/api/v1/high-scores", highScores);
+
+// app.use("*", (req, res) => res.sendStatus(404));
 
 const port = process.env.PORT || 5000;
 
